@@ -20,3 +20,6 @@
   font-size: 36px;
   text-align: center;
 }
+html {
+  user-select: none;
+}

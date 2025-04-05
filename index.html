@@ -36,6 +36,9 @@
         const element = items[x];
         //handle click of item
         element.addEventListener("click", () => {
+          //if the element we clicked has a flag, we don't proceed
+          const [flag] = flagNumberAndItem(x, y);
+          if (flag) return;
           //if the map is not created yet we create it upon the first click, that is to
           //ensure that a couple of white spaces are created from the start
           if (map == undefined) {
@@ -86,20 +89,23 @@
     }
 
     function toggleFlag(x, y) {
-      const rows = document.querySelectorAll(".row");
-      const children = rows[y].childNodes;
-      const item = children[x];
-      const hasImage = item.style.backgroundImage;
-
-      const hasNumber = item.textContent;
-      if (hasNumber) return;
-
-      if (hasImage) {
+      const [flag, number, item] = flagNumberAndItem(x, y);
+      if (number) return;
+      if (flag) {
         item.style.backgroundImage = ``;
       } else {
         item.style.backgroundImage = `url("./flag.png")`;
       }
     }
+    function flagNumberAndItem(x, y) {
+      const rows = document.querySelectorAll(".row");
+      const children = rows[y].childNodes;
+      const item = children[x];
+      const hasImage = item.style.backgroundImage;
+      const hasNumber = item.textContent;
+      return [hasImage, hasNumber, item];
+    }
+
     function changeStyleAndAddNumber(x, y, numberOfBombs) {
       const rows = document.querySelectorAll(".row");
       const children = rows[y].childNodes;
