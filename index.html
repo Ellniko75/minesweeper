@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <div class="container"></div>
+  </body>
+
+  <script>
+    const rows = 20;
+    const columns = 20;
+    let map;
+
+    const $ = document;
+    const container = $.querySelector(".container");
+    //create rows
+    for (let y = 0; y < rows; y++) {
+      const row = document.createElement("div");
+      row.className = "row";
+      for (let x = 0; x < columns; x++) {
+        const item = document.createElement("div");
+        item.className = "item";
+        row.appendChild(item);
+      }
+      container.appendChild(row);
+    }
+
+    const rowsSelected = document.querySelectorAll(".row");
+    rowsSelected.forEach((row, y) => {
+      const items = row.childNodes;
+      for (let x = 0; x < items.length; x++) {
+        const element = items[x];
+        //handle click of item
+        element.addEventListener("click", () => {
+          //if the map is not created yet we create it upon the first click, that is to
+          //ensure that a couple of white spaces are created from the start
+          if (map == undefined) {
+            map = generateMap(columns, rows, x, y);
+          }
+          //if click is on bomb you lost
+          if (isBomb(x, y)) {
+            alert("YOU LOST");
+            return;
+          }
+          //scan
+          const visited = new Map();
+
+          clickPlay(x, y, visited);
+        });
+        //put flag
+        element.addEventListener("contextmenu", (e) => {
+          e.preventDefault();
+          toggleFlag(x, y);
+        });
+      }
+    });
+
+    function generateMap(columns, rows, x, y) {
+      const map = [];
+      for (let y = 0; y < rows; y++) {
+        const currentRow = [];
+        for (let x = 0; x < columns; x++) {
+          const isBomb = Math.floor(Math.random() * 5) == 1;
+          if (isBomb) {
+            currentRow.push(1);
+          } else {
+            currentRow.push(0);
+          }
+        }
+        map.push(currentRow);
+      }
+
+      //set a couple of non bombs mandatorily near the click position
+
+      map[y][x] = 0;
+      console.log(map);
+
+      return map;
+    }
+    function isBomb(x, y) {
+      return map[y][x] == 1;
+    }
+
+    function toggleFlag(x, y) {
+      const rows = document.querySelectorAll(".row");
+      const children = rows[y].childNodes;
+      const item = children[x];
+      const hasImage = item.style.backgroundImage;
+
+      const hasNumber = item.textContent;
+      if (hasNumber) return;
+
+      if (hasImage) {
+        item.style.backgroundImage = ``;
+      } else {
+        item.style.backgroundImage = `url("./flag.png")`;
+      }
+    }
+    function changeStyleAndAddNumber(x, y, numberOfBombs) {
+      const rows = document.querySelectorAll(".row");
+      const children = rows[y].childNodes;
+      children[x].style.backgroundColor = "white";
+      children[x].textContent = numberOfBombs > 0 ? numberOfBombs : "";
+
+      children[x].style.backgroundImage = "";
+    }
+
+    function clickPlay(x, y, visited) {
+      if (x < 0 || y < 0 || y > map.length - 1 || x > map[y].length - 1) return;
+      if (isBomb(x, y)) return;
+      visited.set(`${x},${y}`, true);
+
+      const canGoLeft = x > 0;
+      const canGoUp = y > 0;
+      const canGoRight = x < map[y].length - 1;
+      const canGoDown = y < map.length - 1;
+
+      const left = canGoLeft ? map[y][x - 1] : 0;
+      const up = canGoUp ? map[y - 1][x] : 0;
+      const right = canGoRight ? map[y][x + 1] : 0;
+      const down = canGoDown ? map[y + 1][x] : 0;
+      const upleft = canGoLeft && canGoUp ? map[y - 1][x - 1] : 0;
+      const upright = canGoRight && canGoUp ? map[y - 1][x + 1] : 0;
+      const downleft = canGoDown && canGoLeft ? map[y + 1][x - 1] : 0;
+      const downRight = canGoDown && canGoRight ? map[y + 1][x + 1] : 0;
+
+      const totalBombsAround =
+        left + up + right + down + upleft + upright + downleft + downRight;
+
+      changeStyleAndAddNumber(x, y, totalBombsAround);
+
+      //we only show other cells if the one we clicked doesnt have any other cell next to it
+      if (totalBombsAround == 0) {
+        //left
+        visited.get(`${x - 1},${y}`) == undefined
+          ? clickPlay(x - 1, y, visited)
+          : null;
+        //up
+        visited.get(`${x},${y - 1}`) == undefined
+          ? clickPlay(x, y - 1, visited)
+          : null;
+        //right
+        visited.get(`${x + 1},${y}`) == undefined
+          ? clickPlay(x + 1, y, visited)
+          : null;
+        //down
+        visited.get(`${x},${y + 1}`) == undefined
+          ? clickPlay(x, y + 1, visited)
+          : null;
+        //upleft
+        visited.get(`${x - 1},${y - 1}`) == undefined
+          ? clickPlay(x - 1, y - 1, visited)
+          : null;
+        //upright
+        visited.get(`${x + 1},${y - 1}`) == undefined
+          ? clickPlay(x + 1, y - 1, visited)
+          : null;
+        //downLeft
+        visited.get(`${x - 1},${y + 1}`) == undefined
+          ? clickPlay(x - 1, y + 1, visited)
+          : null;
+        // //downRight
+        visited.get(`${x + 1},${y + 1}`) == undefined
+          ? clickPlay(x + 1, y + 1, visited)
+          : null;
+      }
+    }
+  </script>
+</html>
