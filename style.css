@@ -12,14 +12,17 @@
   width: 40px;
   height: 40px;
   border-width: 1px;
-  border-color: black;
+  border-color: black !important;
   border: solid;
-  background-color: rgb(74, 74, 74);
+  background-color: rgb(49, 49, 49);
   margin: 1px;
   background-size: cover;
   font-size: 36px;
   text-align: center;
+  font-family: monospace;
+  font-weight: bold;
 }
+
 html {
   user-select: none;
 }

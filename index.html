@@ -36,19 +36,19 @@
         const element = items[x];
         //handle click of item
         element.addEventListener("click", (e) => {
+          const [isFlag, isNumber] = flagNumberAndItem(x, y);
           //if the element we clicked has a flag, we don't proceed
-          const [flag, hasNumber] = flagNumberAndItem(x, y);
-          if (flag) return;
+          if (isFlag) return;
           //if the map is not created yet we create it upon the first click, that is to
           //ensure that a couple of white spaces are created from the start
           if (map == undefined) {
             map = generateMap(columns, rows, x, y);
           }
-
           if (isBomb(x, y)) {
             //if click is on bomb you lost
             alert("YOU LOST");
-          } else if (hasNumber) {
+          } //if its a number we clicked on we reveal the adjacent squares
+          else if (isNumber) {
             revealAdjacent(x, y);
           } else {
             //scan
@@ -80,7 +80,6 @@
       }
 
       //set a couple of non bombs mandatorily near the click position
-
       map[y][x] = 0;
       console.log(map);
 
@@ -92,6 +91,7 @@
     //fires when we click a revealed number
     function revealAdjacent(x, y) {
       const arrOfNextToElements = getAdjacentHtmlElements(x, y);
+      //number clicked
       const numberClicked = Number(
         document.querySelectorAll(".row")[y].childNodes[x].textContent
       );
@@ -131,7 +131,7 @@
       const upleft =
         canGoLeft && canGoUp ? rows[y - 1].childNodes[x - 1] : null;
       const upright =
-        canGoLeft && canGoUp ? rows[y - 1].childNodes[x + 1] : null;
+        canGoRight && canGoUp ? rows[y - 1].childNodes[x + 1] : null;
 
       const downleft =
         canGoDown && canGoLeft ? rows[y + 1].childNodes[x - 1] : null;
@@ -223,6 +223,15 @@
       children[x].style.backgroundColor = "white";
       children[x].textContent = numberOfBombs > 0 ? numberOfBombs : "";
       children[x].style.backgroundImage = "";
+      children[x].style.backgroundColor = "#a9a9a9";
+      children[x].id = "revealed";
+      if (numberOfBombs == 1) {
+        children[x].style.color = "blue";
+      } else if (numberOfBombs == 2) {
+        children[x].style.color = "wheat";
+      } else {
+        children[x].style.color = "red";
+      }
     }
     function getTotalBombsAround(x, y) {
       const canGoLeft = x > 0;
@@ -298,9 +307,9 @@
           const item = items[x];
           const isFlag = item.style.backgroundImage;
           const textContent = item.textContent;
-          const backgroundColor = item.style.backgroundColor;
+          const isRevealed = item.id == "revealed";
 
-          if (!isFlag && !textContent && backgroundColor == "white") {
+          if (!isFlag && !textContent && isRevealed) {
             item.click();
           }
         }
