@@ -14,9 +14,10 @@
     const rows = 15;
     const columns = 20;
     let map;
-
     const $ = document;
     const container = $.querySelector(".container");
+
+    const mapOfWhiteSpacesClicked = new Map();
     //create rows
     for (let y = 0; y < rows; y++) {
       const row = document.createElement("div");
@@ -47,6 +48,7 @@
           if (isBomb(x, y)) {
             //if click is on bomb you lost
             alert("YOU LOST");
+            mapOfWhiteSpacesClicked.clear();
           } //if its a number we clicked on we reveal the adjacent squares
           else if (isNumber) {
             revealAdjacent(x, y);
@@ -111,7 +113,7 @@
           }
           revealSquare(e.x, e.y, e.bombsNext);
         });
-        clickAllWhiteSquares();
+        clickAllWhiteSquares(mapOfWhiteSpacesClicked);
       }
     }
     //gets all adjacent html elements of a specific position
@@ -297,13 +299,16 @@
       }
     }
     //only fire this when we succesfully click a NUMBER and reveal map
-    function clickAllWhiteSquares() {
+    function clickAllWhiteSquares(mapOfWhiteSpacesAlreadyClicked) {
       const allRows = document.querySelectorAll(".row");
 
       for (let y = 0; y < allRows.length; y++) {
         const items = allRows[y].childNodes;
 
         for (let x = 0; x < items.length; x++) {
+          if (mapOfWhiteSpacesAlreadyClicked.get(`${x},${y}`) != undefined) {
+            continue;
+          }
           const item = items[x];
           const isFlag = item.style.backgroundImage;
           const textContent = item.textContent;
@@ -311,6 +316,7 @@
 
           if (!isFlag && !textContent && isRevealed) {
             item.click();
+            mapOfWhiteSpacesAlreadyClicked.set(`${x},${y}`, true);
           }
         }
       }
