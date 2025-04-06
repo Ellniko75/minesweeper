@@ -11,7 +11,7 @@
   </body>
 
   <script>
-    const rows = 20;
+    const rows = 15;
     const columns = 20;
     let map;
 
@@ -35,24 +35,26 @@
       for (let x = 0; x < items.length; x++) {
         const element = items[x];
         //handle click of item
-        element.addEventListener("click", () => {
+        element.addEventListener("click", (e) => {
           //if the element we clicked has a flag, we don't proceed
-          const [flag] = flagNumberAndItem(x, y);
+          const [flag, hasNumber] = flagNumberAndItem(x, y);
           if (flag) return;
           //if the map is not created yet we create it upon the first click, that is to
           //ensure that a couple of white spaces are created from the start
           if (map == undefined) {
             map = generateMap(columns, rows, x, y);
           }
-          //if click is on bomb you lost
-          if (isBomb(x, y)) {
-            alert("YOU LOST");
-            return;
-          }
-          //scan
-          const visited = new Map();
 
-          clickPlay(x, y, visited);
+          if (isBomb(x, y)) {
+            //if click is on bomb you lost
+            alert("YOU LOST");
+          } else if (hasNumber) {
+            revealAdjacent(x, y);
+          } else {
+            //scan
+            const visited = new Map();
+            clickPlay(x, y, visited);
+          }
         });
         //put flag
         element.addEventListener("contextmenu", (e) => {
@@ -87,7 +89,111 @@
     function isBomb(x, y) {
       return map[y][x] == 1;
     }
+    //fires when we click a revealed number
+    function revealAdjacent(x, y) {
+      const arrOfNextToElements = getAdjacentHtmlElements(x, y);
+      const numberClicked = Number(
+        document.querySelectorAll(".row")[y].childNodes[x].textContent
+      );
+      //count total flags next to the number clicked
+      const totalFlagsNextTo = arrOfNextToElements.reduce((prev, curr) => {
+        if (curr?.data?.style?.backgroundImage) {
+          return prev + 1;
+        }
+        return prev;
+      }, 0);
+      //see if we have the same amount of flags around the number
+      if (numberClicked == totalFlagsNextTo) {
+        arrOfNextToElements.forEach((e) => {
+          //if it is null or a flag we dont do anything
+          if (!e.data || e.data.style.backgroundImage) {
+            return;
+          }
+          revealSquare(e.x, e.y, e.bombsNext);
+        });
+        clickAllWhiteSquares();
+      }
+    }
+    //gets all adjacent html elements of a specific position
+    function getAdjacentHtmlElements(x, y) {
+      const canGoLeft = x > 0;
+      const canGoUp = y > 0;
+      const canGoRight = x < map[y].length - 1;
+      const canGoDown = y < map.length - 1;
 
+      const rows = document.querySelectorAll(".row");
+
+      const left = canGoLeft ? rows[y].childNodes[x - 1] : null;
+      const right = canGoRight ? rows[y].childNodes[x + 1] : null;
+      const up = canGoUp ? rows[y - 1].childNodes[x] : null;
+      const down = canGoDown ? rows[y + 1].childNodes[x] : null;
+
+      const upleft =
+        canGoLeft && canGoUp ? rows[y - 1].childNodes[x - 1] : null;
+      const upright =
+        canGoLeft && canGoUp ? rows[y - 1].childNodes[x + 1] : null;
+
+      const downleft =
+        canGoDown && canGoLeft ? rows[y + 1].childNodes[x - 1] : null;
+      const downright =
+        canGoDown && canGoRight ? rows[y + 1].childNodes[x + 1] : null;
+
+      return [
+        {
+          data: left,
+          bombsNext: canGoLeft ? getTotalBombsAround(x - 1, y) : null,
+          x: x - 1,
+          y: y,
+        },
+        {
+          data: right,
+          bombsNext: canGoRight ? getTotalBombsAround(x + 1, y) : null,
+          x: x + 1,
+          y: y,
+        },
+        {
+          data: up,
+          bombsNext: canGoUp ? getTotalBombsAround(x, y - 1) : null,
+          x: x,
+          y: y - 1,
+        },
+        {
+          data: down,
+          bombsNext: canGoDown ? getTotalBombsAround(x, y + 1) : null,
+          x: x,
+          y: y + 1,
+        },
+        {
+          data: upleft,
+          bombsNext:
+            canGoLeft && canGoUp ? getTotalBombsAround(x - 1, y - 1) : null,
+          x: x - 1,
+          y: y - 1,
+        },
+        {
+          data: upright,
+          bombsNext:
+            canGoRight && canGoUp ? getTotalBombsAround(x + 1, y - 1) : null,
+          x: x + 1,
+          y: y - 1,
+        },
+        {
+          data: downleft,
+          bombsNext:
+            canGoLeft && canGoDown ? getTotalBombsAround(x - 1, y + 1) : null,
+          x: x - 1,
+          y: y + 1,
+        },
+        {
+          data: downright,
+          bombsNext:
+            canGoDown && canGoRight ? getTotalBombsAround(x + 1, y + 1) : null,
+          x: x + 1,
+          y: y + 1,
+        },
+      ];
+    }
+    //right click, toggles on and off the flag
     function toggleFlag(x, y) {
       const [flag, number, item] = flagNumberAndItem(x, y);
       if (number) return;
@@ -97,6 +203,7 @@
         item.style.backgroundImage = `url("./flag.png")`;
       }
     }
+    //gets you a specific html element
     function flagNumberAndItem(x, y) {
       const rows = document.querySelectorAll(".row");
       const children = rows[y].childNodes;
@@ -105,24 +212,22 @@
       const hasNumber = item.textContent;
       return [hasImage, hasNumber, item];
     }
-
-    function changeStyleAndAddNumber(x, y, numberOfBombs) {
+    //reveals a square
+    function revealSquare(x, y, numberOfBombs) {
+      if (map[y][x] == 1) {
+        alert("YOU LOST");
+        return;
+      }
       const rows = document.querySelectorAll(".row");
       const children = rows[y].childNodes;
       children[x].style.backgroundColor = "white";
       children[x].textContent = numberOfBombs > 0 ? numberOfBombs : "";
-
       children[x].style.backgroundImage = "";
     }
-
-    function clickPlay(x, y, visited) {
-      if (x < 0 || y < 0 || y > map.length - 1 || x > map[y].length - 1) return;
-      if (isBomb(x, y)) return;
-      visited.set(`${x},${y}`, true);
-
+    function getTotalBombsAround(x, y) {
       const canGoLeft = x > 0;
       const canGoUp = y > 0;
-      const canGoRight = x < map[y].length - 1;
+      const canGoRight = x < map[y]?.length - 1;
       const canGoDown = y < map.length - 1;
 
       const left = canGoLeft ? map[y][x - 1] : 0;
@@ -136,9 +241,16 @@
 
       const totalBombsAround =
         left + up + right + down + upleft + upright + downleft + downRight;
+      return totalBombsAround;
+    }
 
-      changeStyleAndAddNumber(x, y, totalBombsAround);
+    function clickPlay(x, y, visited) {
+      if (x < 0 || y < 0 || y > map.length - 1 || x > map[y].length - 1) return;
+      if (isBomb(x, y)) return;
+      visited.set(`${x},${y}`, true);
 
+      const totalBombsAround = getTotalBombsAround(x, y);
+      revealSquare(x, y, totalBombsAround);
       //we only show other cells if the one we clicked doesnt have any other cell next to it
       if (totalBombsAround == 0) {
         //left
@@ -173,6 +285,25 @@
         visited.get(`${x + 1},${y + 1}`) == undefined
           ? clickPlay(x + 1, y + 1, visited)
           : null;
+      }
+    }
+    //only fire this when we succesfully click a NUMBER and reveal map
+    function clickAllWhiteSquares() {
+      const allRows = document.querySelectorAll(".row");
+
+      for (let y = 0; y < allRows.length; y++) {
+        const items = allRows[y].childNodes;
+
+        for (let x = 0; x < items.length; x++) {
+          const item = items[x];
+          const isFlag = item.style.backgroundImage;
+          const textContent = item.textContent;
+          const backgroundColor = item.style.backgroundColor;
+
+          if (!isFlag && !textContent && backgroundColor == "white") {
+            item.click();
+          }
+        }
       }
     }
   </script>
